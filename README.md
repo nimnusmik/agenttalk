@@ -21,8 +21,9 @@
 - [01. 대화 엔진 설계서](docs/01-conversation-engine-spec.md)
 - [02. 캐릭터 컨셉](docs/02-character-concepts.md)
 - [03. UX·모션 아이디어](docs/03-ux-motion-ideas.md)
+- [04. 캐릭터: 노아](docs/04-character-noa.md) — 첫 번째 캐릭터
 
 ## 현재 단계
-기획 정리 완료 → 프로토타입 직전.
+기획 정리 완료 → 첫 캐릭터(노아) 확정 → 프로토타입 직전.
 
-**다음 순서**: 캐릭터 1명 페르소나 확정 → 베이스 도트 1장 → sprite-gen 실행 → Flutter 수직 슬라이스("느낌" 검증).
+**다음 순서**: 노아 베이스 도트 1장 → sprite-gen 실행 → Flutter 수직 슬라이스("느낌" 검증).
