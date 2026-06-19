@@ -18,6 +18,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    # 플레이스홀더 도트(scripts/gen_placeholder_noa.py 생성). 진짜 sprite-gen 아트로 교체 예정.
-    - assets/sprites/noa/manifest.json
-    - assets/sprites/noa/sprite-sheet-alpha.png
+    # 노아 아바타(정적 이미지). 표정 바뀌는 애니메이션은 추후 도트 프레임으로 교체.
+    - assets/character/noa.jpg

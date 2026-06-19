@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
-import '../character/character_loader.dart';
-import '../character/character_state.dart';
-import '../character/character_view.dart';
 import 'chat_controller.dart';
 import 'models.dart';
 
 /// 카톡 느낌 채팅 화면: 말풍선 + 입력중 + 읽음 + 통통 마이크로인터랙션.
-/// 아바타는 CharacterView(도트 스프라이트) — 헤더는 현재 감정/무드 라이브 반영.
+/// 아바타는 노아 정적 이미지(assets/character/noa.jpg).
+/// (감정 따라 표정 바뀌는 애니메이션은 추후 도트 프레임으로 — 헤더의 emotion·mood 텍스트는
+///  LLM이 매긴 상태를 그대로 노출.)
 class ChatScreen extends StatefulWidget {
   final ChatController controller;
   const ChatScreen({super.key, required this.controller});
@@ -19,18 +18,11 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
-  CharacterBundle? _bundle;
 
   @override
   void initState() {
     super.initState();
     widget.controller.addListener(_onChange);
-    loadCharacterFromAssets(
-      manifestAsset: 'assets/sprites/noa/manifest.json',
-      atlasAsset: 'assets/sprites/noa/sprite-sheet-alpha.png',
-    ).then((b) {
-      if (mounted) setState(() => _bundle = b);
-    }).catchError((_) {/* 에셋 없으면 😺 폴백 */});
   }
 
   void _onChange() {
@@ -68,27 +60,27 @@ class _ChatScreenState extends State<ChatScreen> {
         backgroundColor: const Color(0xFFB2C7DA),
         elevation: 0,
         titleSpacing: 0,
-        title: ListenableBuilder(
-          listenable: c,
-          builder: (_, __) => Row(
-            children: [
-              // 헤더 아바타 = 현재 감정/무드 라이브 반영
-              noaAvatar(_bundle, emotion: c.avatarEmotion, mood: c.moodScore, size: 42),
-              const SizedBox(width: 10),
-              Column(
+        title: Row(
+          children: [
+            noaAvatar(size: 42),
+            const SizedBox(width: 10),
+            ListenableBuilder(
+              listenable: c,
+              builder: (_, __) => Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text('노아',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                   Text(
                     '${c.avatarEmotion.name} · mood ${c.moodScore}',
                     style: const TextStyle(fontSize: 11, color: Colors.black54),
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
       body: Column(
@@ -104,14 +96,11 @@ class _ChatScreenState extends State<ChatScreen> {
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                   itemCount: count,
                   itemBuilder: (_, i) {
-                    if (i >= c.messages.length) {
-                      return _TypingBubble(bundle: _bundle);
-                    }
+                    if (i >= c.messages.length) return const _TypingBubble();
                     final msg = c.messages[i];
                     final groupStart =
                         i == 0 || c.messages[i - 1].sender != msg.sender;
-                    return _MessageRow(
-                        msg: msg, showAvatar: groupStart, bundle: _bundle);
+                    return _MessageRow(msg: msg, showAvatar: groupStart);
                   },
                 );
               },
@@ -124,39 +113,21 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 }
 
-/// 원형 아바타: 스프라이트 있으면 CharacterView, 없으면 😺 폴백.
-Widget noaAvatar(
-  CharacterBundle? b, {
-  required Emotion emotion,
-  int mood = 0,
-  double size = 34,
-}) {
+/// 원형 노아 아바타 (정적 이미지).
+Widget noaAvatar({double size = 34}) {
   return Container(
     width: size,
     height: size,
     clipBehavior: Clip.antiAlias,
     decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-    child: b == null
-        ? Center(child: Text('😺', style: TextStyle(fontSize: size * 0.55)))
-        : CharacterView(
-            atlas: b.atlas,
-            manifest: b.manifest,
-            emotion: emotion,
-            moodScore: mood,
-            showMoodTint: false,
-          ),
+    child: Image.asset('assets/character/noa.jpg', fit: BoxFit.cover),
   );
 }
 
 class _MessageRow extends StatelessWidget {
   final ChatMessage msg;
   final bool showAvatar;
-  final CharacterBundle? bundle;
-  const _MessageRow({
-    required this.msg,
-    required this.showAvatar,
-    required this.bundle,
-  });
+  const _MessageRow({required this.msg, required this.showAvatar});
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +172,7 @@ class _MessageRow extends StatelessWidget {
           child: showAvatar
               ? Padding(
                   padding: const EdgeInsets.only(top: 2),
-                  child: noaAvatar(bundle, emotion: Emotion.idle, size: 34),
+                  child: noaAvatar(size: 34),
                 )
               : null,
         ),
@@ -233,8 +204,7 @@ class _Bouncy extends StatelessWidget {
 }
 
 class _TypingBubble extends StatefulWidget {
-  final CharacterBundle? bundle;
-  const _TypingBubble({required this.bundle});
+  const _TypingBubble();
   @override
   State<_TypingBubble> createState() => _TypingBubbleState();
 }
@@ -256,13 +226,9 @@ class _TypingBubbleState extends State<_TypingBubble>
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 42,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 2),
-            // 입력 중에는 thinking 표정
-            child: noaAvatar(widget.bundle, emotion: Emotion.thinking, size: 34),
-          ),
+        Padding(
+          padding: const EdgeInsets.only(top: 2, right: 8),
+          child: noaAvatar(size: 34),
         ),
         Container(
           margin: const EdgeInsets.symmetric(vertical: 3),
