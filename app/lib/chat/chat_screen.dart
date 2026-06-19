@@ -64,7 +64,7 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               const CircleAvatar(
                 backgroundColor: Colors.white,
-                child: Text('🍓'),
+                child: Text('😺'),
               ),
               const SizedBox(width: 10),
               Column(
@@ -163,7 +163,7 @@ class _MessageRow extends StatelessWidget {
               ? const CircleAvatar(
                   radius: 16,
                   backgroundColor: Colors.white,
-                  child: Text('🍓', style: TextStyle(fontSize: 16)),
+                  child: Text('😺', style: TextStyle(fontSize: 16)),
                 )
               : null,
         ),
@@ -222,7 +222,7 @@ class _TypingBubbleState extends State<_TypingBubble>
           child: CircleAvatar(
             radius: 16,
             backgroundColor: Colors.white,
-            child: Text('🍓', style: TextStyle(fontSize: 16)),
+            child: Text('😺', style: TextStyle(fontSize: 16)),
           ),
         ),
         Container(

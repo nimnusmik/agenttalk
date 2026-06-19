@@ -72,6 +72,9 @@ class ClaudeNoaClient implements NoaClient {
         'content-type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
+        // 프로토타입 전용: 브라우저(Flutter Web)에서 직접 호출 허용(CORS).
+        // 출시 빌드에선 백엔드 경유로 바꾸면서 제거.
+        'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: jsonEncode({
         'model': model,
@@ -116,6 +119,14 @@ class FakeNoaClient implements NoaClient {
     ).text;
     _turn++;
 
+    if (last.contains('안녕') || last.contains('하이') || last.contains('ㅎㅇ')) {
+      return const NoaReply(
+        bubbles: [
+          Bubble('왔어?', emotion: Emotion.idle),
+          Bubble('딱히 기다린 건 아닌데.', emotion: Emotion.talking),
+        ],
+      );
+    }
     if (last.contains('힘들') || last.contains('우울') || last.contains('지쳐')) {
       return const NoaReply(
         bubbles: [
