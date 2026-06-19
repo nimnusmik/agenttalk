@@ -17,7 +17,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # 스프라이트 아틀라스가 나오면 여기에 등록 (docs/05):
-  # assets:
-  #   - assets/sprites/noa/manifest.json
-  #   - assets/sprites/noa/sprite-sheet-alpha.png
+  assets:
+    # 플레이스홀더 도트(scripts/gen_placeholder_noa.py 생성). 진짜 sprite-gen 아트로 교체 예정.
+    - assets/sprites/noa/manifest.json
+    - assets/sprites/noa/sprite-sheet-alpha.png
