@@ -1,13 +1,13 @@
 {
   "states": {
-    "idle":      { "frames": 4, "fps": 4, "loop": true,  "action": "calm seated idle; subtle breathing, slow tail sway, occasional slow blink; aloof cool face" },
-    "talk":      { "frames": 4, "fps": 8, "loop": true,  "action": "talking loop; mouth opens and closes, minimal facial change, occasional small head tilt; body stays seated and still" },
-    "thinking":  { "frames": 4, "fps": 4, "loop": true,  "action": "pondering loop; paw near chin, eyes glance upward, tail tip flicks slowly" },
-    "happy":     { "frames": 4, "fps": 8, "loop": false, "action": "pleased reaction; face stays cool but tail swishes up and ears perk clearly; subtle happy body language (tsundere gap)" },
-    "sad":       { "frames": 4, "fps": 4, "loop": false, "action": "downcast reaction; ears fold down, body curls smaller, tail lowers to the floor" },
-    "surprised": { "frames": 5, "fps": 8, "loop": false, "action": "startled reaction; fur puffs and eyes widen by the middle frames, then settles back toward a composed cool pose on the final frame" },
-    "idle_down": { "frames": 4, "fps": 3, "loop": true,  "action": "low-mood seated idle; ears drooped, tail limp toward the floor, slightly hunched; subdued" },
-    "idle_up":   { "frames": 4, "fps": 6, "loop": true,  "action": "good-mood seated idle; quicker happy tail sway, ears perked, small paw tap; face still cool (gap)" }
+    "idle":      { "frames": 4, "fps": 4, "loop": true,  "action": "calm idle; cat in a red strawberry costume sits still, strawberry body gently breathes (slight squash), green leaf stem sways slowly, deadpan face with occasional slow blink" },
+    "talk":      { "frames": 4, "fps": 8, "loop": true,  "action": "talking loop; mouth opens and closes, strawberry body bobs slightly, deadpan face barely changes, green stem mostly still" },
+    "thinking":  { "frames": 4, "fps": 4, "loop": true,  "action": "pondering loop; whole strawberry body tilts to one side, eyes glance upward, green stem tip flicks slowly" },
+    "happy":     { "frames": 4, "fps": 8, "loop": false, "action": "pleased reaction; deadpan face stays flat but the strawberry body does a small happy bounce, the green stem perks up, and the tiny legs shuffle (tsundere gap)" },
+    "sad":       { "frames": 4, "fps": 4, "loop": false, "action": "downcast reaction; strawberry body slumps lower, green stem droops to the side, eyes lower, little legs close together" },
+    "surprised": { "frames": 5, "fps": 8, "loop": false, "action": "startled reaction; strawberry body pops up and stretches taller, eyes widen and the green stem stands straight on the middle frames, then settles back to the flat deadpan pose on the final frame" },
+    "idle_down": { "frames": 4, "fps": 3, "loop": true,  "action": "low-mood idle; strawberry body sits lower and a little deflated, green stem drooped, eyes downcast; subdued" },
+    "idle_up":   { "frames": 4, "fps": 6, "loop": true,  "action": "good-mood idle; strawberry body bounces lightly, green stem perked and wiggling, tiny legs tap; face still deadpan (gap)" }
   },
   "cell": { "shape": "square", "size": 256, "safe_margin": 24 },
   "motion_phase_guides": false
