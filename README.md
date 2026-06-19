@@ -25,6 +25,8 @@
 - [05. sprite-gen 연동](docs/05-sprite-gen-integration.md) — 스프라이트 파이프라인·베이스 락 브리프·런타임 계약
 
 ## 현재 단계
-기획 정리 완료 → 첫 캐릭터(노아) 확정 → sprite-gen 스키마 정합 완료 → 프로토타입 직전.
+기획 정리 → 첫 캐릭터(노아) 확정 → sprite-gen 스키마 정합 → **대화 느낌 슬라이스 작성**(`app/`, Flutter SDK 미설치로 컴파일 미검증).
 
-**다음 순서**: 노아 베이스 도트 1장(→ [베이스 락 브리프](docs/05-sprite-gen-integration.md#0--base-lock-gate-blocking--베이스-도트-작화-브리프)) → sprite-gen 실행 → Flutter 수직 슬라이스("느낌" 검증).
+**실행**: `cd app && flutter create . && flutter run` (키 없이 FakeNoaClient 로 즉시 동작 / 실 Claude 는 `--dart-define=ANTHROPIC_API_KEY=...`). 자세히는 [app/README](app/README.md).
+
+**다음 순서**: ① `flutter run` 으로 "느낌" 검증 → ② 노아 베이스 도트 1장([베이스 락 브리프](docs/05-sprite-gen-integration.md)) → sprite-gen → `CharacterView` 를 상단 아바타로 결합.

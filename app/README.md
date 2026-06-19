@@ -1,42 +1,43 @@
 # agenttalk Flutter 앱
 
-> 현재 단계: **캐릭터 렌더링 골격**(`lib/character/`)만 선반영. Flutter 프로젝트 셸은 아직 미생성.
-> ⚠️ 이 환경에 Flutter SDK 가 없어 **컴파일 검증은 미실시**. 스키마 정확성 기준으로 작성됨 — 프로젝트에 넣고 `flutter pub get` → `flutter analyze` 로 검증할 것.
+> 현재 단계: **대화 느낌 슬라이스**(`lib/chat/`) + 캐릭터 렌더링 골격(`lib/character/`). `main.dart`/`pubspec.yaml` 포함 — 실행 가능한 셸.
+> ⚠️ 이 환경에 Flutter SDK 가 없어 **컴파일 검증은 미실시**. 스키마 정확성 기준 작성 — 아래 실행법으로 `flutter analyze`/`flutter run` 검증할 것.
 
-## 구성 (`lib/character/`)
-- `sprite_manifest.dart` — sprite-gen `manifest.json` 모델(frame_layout/animation). [docs/05](../docs/05-sprite-gen-integration.md) 스키마와 동기화
-- `character_state.dart` — emotion(논리) ↔ sprite state 매핑, mood 버킷(-3..+3 → down/neutral/up)
-- `character_view.dart` — 아틀라스 **rect 샘플링** + 프레임 재생 위젯. 픽셀아트 nearest-neighbor, transient→idle 복귀, mood 배경 tint
-- `character_loader.dart` — assets 에서 manifest + 아틀라스 로드
-- `character_demo.dart` — 감정 칩 + 무드 슬라이더 수동 테스트 화면
+## 실행법
+```bash
+cd app
+flutter create .          # 플랫폼 폴더(ios/android/...) 생성, 기존 lib/ 유지
+flutter pub get
+flutter run               # 키 없이 FakeNoaClient 로 즉시 "느낌" 검증
+# 실제 노아(Claude):
+flutter run --dart-define=ANTHROPIC_API_KEY=sk-ant-...
+```
+- **키 없으면 FakeNoaClient** — 노아 톤 캔드 응답으로 버블/입력중/읽음/통통 흐름이 바로 돈다.
+- ⚠️ **Web 으로 실행 금지** (real Claude 시): CORS + 키 노출. iOS/Android/데스크톱에서 실행.
+- ⚠️ 앱이 LLM 키를 직접 들고 호출하는 건 **프로토타입 한정**. 출시 전 백엔드로 이동([docs/00](../docs/00-product-overview.md)/[docs/01](../docs/01-conversation-engine-spec.md)).
 
-## 붙이는 법
-1. Flutter 프로젝트 생성 (app/ 에서):
-   ```bash
-   flutter create .
-   ```
-   생성된 `lib/` 위에 `lib/character/` 가 그대로 얹힌다.
-2. sprite-gen 산출물을 assets 로 복사:
-   ```text
-   assets/sprites/noa/manifest.json
-   assets/sprites/noa/sprite-sheet-alpha.png
-   ```
-3. `pubspec.yaml`:
-   ```yaml
-   flutter:
-     assets:
-       - assets/sprites/noa/manifest.json
-       - assets/sprites/noa/sprite-sheet-alpha.png
-   ```
-4. `main.dart` 에서 `CharacterDemoScreen()` 을 home 으로 띄워 감정/무드 전환 검증.
+## 구성
+
+### `lib/chat/` — 대화 느낌 슬라이스 (실행 진입점)
+- `models.dart` — `ChatMessage`/`Bubble`/`NoaReply`(bubbles+mood_shift+memory_note)
+- `noa_persona.dart` — 노아(딸기 데드팬 고양이) 시스템 프롬프트, mood 반영([docs/04](../docs/04-character-noa.md))
+- `noa_client.dart` — `ClaudeNoaClient`(raw HTTP, `claude-opus-4-8`, structured output) + `FakeNoaClient`(오프라인)
+- `chat_controller.dart` — 오케스트레이터: 읽음→입력중→LLM→버블 순차 재생→mood 누적([docs/01](../docs/01-conversation-engine-spec.md))
+- `chat_screen.dart` — 카톡 UI: 말풍선·입력중·읽음·말풍선 스프링 등장·전송 squash. 상단에 현재 감정/무드 표기
+
+### `lib/character/` — 캐릭터 렌더러 골격 (스프라이트 준비 후 결합)
+- `sprite_manifest.dart` / `character_state.dart` / `character_view.dart` / `character_loader.dart` / `character_demo.dart`
+- sprite-gen 아틀라스가 나오면 `assets/sprites/noa/` 에 넣고 `CharacterView` 를 채팅 상단 아바타로 교체([docs/05](../docs/05-sprite-gen-integration.md))
 
 ## 의존성
-외부 패키지 **0** — `material`, `scheduler`, `services`, `dart:ui` 모두 Flutter SDK 내장.
+- `http` (Claude raw HTTP). 그 외 `material`/`scheduler`/`services`/`dart:ui` 는 SDK 내장.
 
-## 알려진 한계 (골격 단계)
-- 같은 emotion 을 연속으로 세팅하면 재생이 다시 트리거되지 않음(버블마다 동일 감정 반복 시). 필요 시 trigger 카운터 추가.
-- transient 복귀는 단순 1회 재생 후 idle. 더 정교한 큐(여러 감정 연속 재생)는 대화 엔진 쪽에서 큐잉 예정([docs/01](../docs/01-conversation-engine-spec.md)).
+## 알려진 한계 (슬라이스 단계)
+- 아바타는 임시 🍓 이모지 + 감정/무드 텍스트. 실제 도트 캐릭터는 `CharacterView` 연결 대기(스프라이트 필요).
+- 대화 이력은 메모리에만(영속화·계정 없음). `memory_note` 영속화는 TODO.
+- 스티커·먼저 연락(푸시)·단톡방 미구현(스키마만 docs 에 설계).
 
 ## 다음
-- 통통 4종(말풍선 스프링·전송 squash·햅틱/사운드·레벨업 하트팝) → [docs/03](../docs/03-ux-motion-ideas.md)
-- 채팅 화면에 CharacterView 를 상단 아바타로 + `thinking`(응답 대기)·`talk`(스트리밍) 연동 → [docs/01](../docs/01-conversation-engine-spec.md)
+- 노아 베이스 도트 → sprite-gen → `CharacterView` 결합(상단 아바타가 `thinking`/`talk`/감정 재생)
+- 통통 4종 중 햅틱/사운드·레벨업 하트팝 추가 → [docs/03](../docs/03-ux-motion-ideas.md)
+- 백엔드(Supabase) + LLM 오케스트레이션 함수로 키 이동

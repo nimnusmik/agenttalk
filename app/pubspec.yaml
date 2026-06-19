@@ -1,0 +1,23 @@
+name: agenttalk
+description: AI 카톡형 도트 컴패니언 (프로토타입)
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.22.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.0
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  # 스프라이트 아틀라스가 나오면 여기에 등록 (docs/05):
+  # assets:
+  #   - assets/sprites/noa/manifest.json
+  #   - assets/sprites/noa/sprite-sheet-alpha.png
