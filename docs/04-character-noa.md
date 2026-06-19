@@ -99,23 +99,21 @@
 idle | talking | thinking | happy | sad | surprised
 ```
 
-**sprite-gen 액션 목록 (초안 — sprite-gen 실제 스키마에 맞춰 조정)**:
+**emotion → sprite state 매핑**: LLM은 논리 감정만 emit, 앱이 sprite state로 매핑. 대부분 1:1, 단 `talking`→`talk`, `idle`→무드 버킷에 따라 `idle`/`idle_down`/`idle_up`.
+
+**sprite-gen 입력은 `states{}` 객체** (v1.7.0 실제 스키마 확인 완료, 2026-06-19 — `actions[]` 배열 아님). feed-ready 파일: [`sprites/noa/noa.request.json`](../sprites/noa/noa.request.json) *(prepare_sprite_run.py로 검증 완료)*. 전체 파이프라인·**베이스 락 브리프**·명령어·런타임 manifest 계약 → [05. sprite-gen 연동](05-sprite-gen-integration.md).
+
 ```json
-{
-  "character": "noa",
-  "style": "pixel art, cute black cat, 2.5-head, sharp aloof eyes, expressive tail",
-  "actions": [
-    { "name": "idle_neutral", "frames": 4, "loop": true,  "desc": "시크 앉기, 꼬리 천천히, 눈 반쯤" },
-    { "name": "idle_down",    "frames": 4, "loop": true,  "desc": "귀 처짐, 꼬리 축, 웅크림 (mood 낮음)" },
-    { "name": "idle_up",      "frames": 6, "loop": true,  "desc": "꼬리 빠른 살랑, 귀 쫑긋, 발 까딱 (mood 높음)" },
-    { "name": "talking",      "frames": 4, "loop": true,  "desc": "입 움직임, 표정 변화 적음, 고개 까딱" },
-    { "name": "thinking",     "frames": 4, "loop": true,  "desc": "턱 괴고 눈 위로, 꼬리 끝 까딱" },
-    { "name": "happy",        "frames": 6, "loop": false, "desc": "표정 무심, 꼬리 살랑+귀 쫑긋 (갭모에)" },
-    { "name": "sad",          "frames": 4, "loop": false, "desc": "귀 축, 몸 웅크림, 꼬리 바닥" },
-    { "name": "surprised",    "frames": 5, "loop": false, "desc": "털 뻗고 눈 커짐→1초 뒤 시크하게 수습" }
-  ]
+"states": {
+  "idle":      { "frames": 4, "fps": 4, "loop": true,  "action": "calm seated idle; breathing, slow tail sway, slow blink; aloof" },
+  "talk":      { "frames": 4, "fps": 8, "loop": true,  "action": "mouth open/close talking loop; minimal face change; body still" },
+  "thinking":  { "frames": 4, "fps": 4, "loop": true,  "action": "paw near chin, eyes up, tail tip flick" },
+  "happy":     { "frames": 4, "fps": 8, "loop": false, "action": "cool face but tail swishes + ears perk (gap)" },
+  "sad":       { "frames": 4, "fps": 4, "loop": false, "action": "ears fold, body curls, tail to floor" },
+  "surprised": { "frames": 5, "fps": 8, "loop": false, "action": "fur puffs + eyes widen, settle back by final frame" }
 }
 ```
+> 무드 baseline `idle_down`/`idle_up`은 2차 wave 상태로 추가(전체 8 states). frame 수는 sprite-gen 가이드(4 기본, 5는 복귀 프레임 있을 때, 9·12 금지)를 따름.
 
 ---
 

@@ -1,0 +1,14 @@
+{
+  "states": {
+    "idle":      { "frames": 4, "fps": 4, "loop": true,  "action": "calm seated idle; subtle breathing, slow tail sway, occasional slow blink; aloof cool face" },
+    "talk":      { "frames": 4, "fps": 8, "loop": true,  "action": "talking loop; mouth opens and closes, minimal facial change, occasional small head tilt; body stays seated and still" },
+    "thinking":  { "frames": 4, "fps": 4, "loop": true,  "action": "pondering loop; paw near chin, eyes glance upward, tail tip flicks slowly" },
+    "happy":     { "frames": 4, "fps": 8, "loop": false, "action": "pleased reaction; face stays cool but tail swishes up and ears perk clearly; subtle happy body language (tsundere gap)" },
+    "sad":       { "frames": 4, "fps": 4, "loop": false, "action": "downcast reaction; ears fold down, body curls smaller, tail lowers to the floor" },
+    "surprised": { "frames": 5, "fps": 8, "loop": false, "action": "startled reaction; fur puffs and eyes widen by the middle frames, then settles back toward a composed cool pose on the final frame" },
+    "idle_down": { "frames": 4, "fps": 3, "loop": true,  "action": "low-mood seated idle; ears drooped, tail limp toward the floor, slightly hunched; subdued" },
+    "idle_up":   { "frames": 4, "fps": 6, "loop": true,  "action": "good-mood seated idle; quicker happy tail sway, ears perked, small paw tap; face still cool (gap)" }
+  },
+  "cell": { "shape": "square", "size": 256, "safe_margin": 24 },
+  "motion_phase_guides": false
+}
