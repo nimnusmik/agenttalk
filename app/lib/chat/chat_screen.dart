@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 
 import 'chat_controller.dart';
 import 'models.dart';
+import 'noa_room.dart';
 
-/// 카톡 느낌 채팅 화면: 말풍선 + 입력중 + 읽음 + 통통 마이크로인터랙션.
-/// 아바타는 노아 정적 이미지(assets/character/noa.jpg).
-/// (감정 따라 표정 바뀌는 애니메이션은 추후 도트 프레임으로 — 헤더의 emotion·mood 텍스트는
-///  LLM이 매긴 상태를 그대로 노출.)
+/// 노아의 방 (Direction 01) 채팅 화면.
+/// 상단: 노아가 돌아다니는 방 무대(대화 시작 시 슬림 헤더로 줄어듦).
+/// 하단: 딸기우유 톤 말풍선 채팅(둥근 시트로 방과 자연스럽게 연결).
+/// 데스크톱(웹)에서는 폰 폭(max 480)으로 가운데 정렬.
 class ChatScreen extends StatefulWidget {
   final ChatController controller;
   const ChatScreen({super.key, required this.controller});
@@ -18,11 +19,20 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _input = TextEditingController();
   final _scroll = ScrollController();
+  final _inputFocus = FocusNode();
 
   @override
   void initState() {
     super.initState();
     widget.controller.addListener(_onChange);
+    // 입력창 포커스 = "노아야 봐줘" → 보내기 전에 이미 쳐다봄.
+    _inputFocus.addListener(() {
+      if (_inputFocus.hasFocus) widget.controller.lookAtMe();
+    });
+    // 진입하면 노아가 먼저 한마디.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      widget.controller.openingGreeting();
+    });
   }
 
   void _onChange() {
@@ -42,6 +52,7 @@ class _ChatScreenState extends State<ChatScreen> {
     widget.controller.removeListener(_onChange);
     _input.dispose();
     _scroll.dispose();
+    _inputFocus.dispose();
     super.dispose();
   }
 
@@ -54,94 +65,155 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
+    final size = MediaQuery.of(context).size;
+    final bigH = (size.height * 0.46).clamp(300.0, 430.0);
+    final slimH = (size.height * 0.26).clamp(190.0, 250.0);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFB2C7DA),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFB2C7DA),
-        elevation: 0,
-        titleSpacing: 0,
-        title: Row(
-          children: [
-            noaAvatar(size: 42),
-            const SizedBox(width: 10),
-            ListenableBuilder(
-              listenable: c,
-              builder: (_, __) => Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('노아',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                  Text(
-                    '${c.avatarEmotion.name} · mood ${c.moodScore}',
-                    style: const TextStyle(fontSize: 11, color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: ListenableBuilder(
-              listenable: c,
-              builder: (_, __) {
-                final count = c.messages.length + (c.typing ? 1 : 0);
-                return ListView.builder(
-                  controller: _scroll,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-                  itemCount: count,
-                  itemBuilder: (_, i) {
-                    if (i >= c.messages.length) return const _TypingBubble();
-                    final msg = c.messages[i];
-                    final groupStart =
-                        i == 0 || c.messages[i - 1].sender != msg.sender;
-                    return _MessageRow(msg: msg, showAvatar: groupStart);
+      backgroundColor: const Color(0xFF241B2E),
+      resizeToAvoidBottomInset: true,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Column(
+            children: [
+              // ── 노아의 방 (collapsing) ──
+              SafeArea(
+                bottom: false,
+                child: ListenableBuilder(
+                  listenable: c,
+                  builder: (_, __) {
+                    // 사용자가 말 걸기 전까지는 큰 방(첫인상). 첫 대화 후 슬림 헤더로.
+                    final engaged = c.messages.any((m) => m.isMe);
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 420),
+                      curve: Curves.easeOutCubic,
+                      height: engaged ? slimH : bigH,
+                      width: double.infinity,
+                      child: NoaRoom(controller: c),
+                    );
                   },
-                );
-              },
-            ),
+                ),
+              ),
+              // ── 대화 (둥근 시트로 방과 연결) ──
+              Expanded(
+                child: Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xFFFBE6DC), Color(0xFFFFFBF9)],
+                      stops: [0.0, 0.22],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(22),
+                      topRight: Radius.circular(22),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(0x1FBE5A5A),
+                        blurRadius: 18,
+                        offset: Offset(0, -6),
+                      ),
+                    ],
+                  ),
+                  child: ListenableBuilder(
+                    listenable: c,
+                    builder: (_, __) {
+                      if (c.messages.isEmpty && !c.typing) {
+                        return const _EmptyState();
+                      }
+                      final count = c.messages.length + (c.typing ? 1 : 0);
+                      return ListView.builder(
+                        controller: _scroll,
+                        padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
+                        itemCount: count,
+                        itemBuilder: (_, i) {
+                          if (i >= c.messages.length) {
+                            return const _TypingBubble();
+                          }
+                          return _MessageRow(msg: c.messages[i]);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ),
+              _InputBar(
+                controller: _input,
+                focusNode: _inputFocus,
+                onSend: _send,
+              ),
+            ],
           ),
-          _InputBar(controller: _input, onSend: _send),
-        ],
+        ),
       ),
     );
   }
 }
 
-/// 원형 노아 아바타 (정적 이미지).
-Widget noaAvatar({double size = 34}) {
-  return Container(
-    width: size,
-    height: size,
-    clipBehavior: Clip.antiAlias,
-    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-    child: Image.asset('assets/character/noa.jpg', fit: BoxFit.cover),
-  );
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(28),
+        child: Text(
+          '노아가 방을 어슬렁거려요.\n방을 톡 누르거나, 먼저 말 걸어보세요.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 13.5,
+            height: 1.5,
+            color: Color(0xFFB98A8A),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _MessageRow extends StatelessWidget {
   final ChatMessage msg;
-  final bool showAvatar;
-  const _MessageRow({required this.msg, required this.showAvatar});
+  const _MessageRow({required this.msg});
 
   @override
   Widget build(BuildContext context) {
     final isMe = msg.isMe;
     final bubble = _Bouncy(
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 260),
+        constraints: const BoxConstraints(maxWidth: 280),
         margin: const EdgeInsets.symmetric(vertical: 3),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: isMe ? const Color(0xFFFEE500) : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          color: isMe ? const Color(0xFFE2474F) : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(18),
+            topRight: const Radius.circular(18),
+            bottomLeft: Radius.circular(isMe ? 18 : 6),
+            bottomRight: Radius.circular(isMe ? 6 : 18),
+          ),
+          boxShadow: isMe
+              ? null
+              : const [
+                  BoxShadow(
+                    color: Color(0x1FC95A5A),
+                    blurRadius: 12,
+                    offset: Offset(0, 4),
+                  ),
+                ],
         ),
-        child: Text(msg.text, style: const TextStyle(fontSize: 15, height: 1.3)),
+        child: Text(
+          msg.text,
+          style: TextStyle(
+            fontSize: 15,
+            height: 1.34,
+            color: isMe ? Colors.white : const Color(0xFF5B2333),
+            fontWeight: isMe ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
       ),
     );
 
@@ -152,33 +224,22 @@ class _MessageRow extends StatelessWidget {
         children: [
           if (!msg.read)
             const Padding(
-              padding: EdgeInsets.only(right: 4, bottom: 6),
-              child: Text('1',
-                  style: TextStyle(
-                      color: Color(0xFFF9D71C),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold)),
+              padding: EdgeInsets.only(right: 5, bottom: 7),
+              child: Text(
+                '1',
+                style: TextStyle(
+                  color: Color(0xFFE2474F),
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          bubble,
+          Flexible(child: bubble),
         ],
       );
     }
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 42,
-          child: showAvatar
-              ? Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: noaAvatar(size: 34),
-                )
-              : null,
-        ),
-        Flexible(child: bubble),
-      ],
-    );
+    return Row(children: [Flexible(child: bubble)]);
   }
 }
 
@@ -211,9 +272,10 @@ class _TypingBubble extends StatefulWidget {
 
 class _TypingBubbleState extends State<_TypingBubble>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _a =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
-        ..repeat();
+  late final AnimationController _a = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat();
 
   @override
   void dispose() {
@@ -224,18 +286,25 @@ class _TypingBubbleState extends State<_TypingBubble>
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 2, right: 8),
-          child: noaAvatar(size: 34),
-        ),
         Container(
           margin: const EdgeInsets.symmetric(vertical: 3),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+          decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(18),
+              topRight: Radius.circular(18),
+              bottomLeft: Radius.circular(6),
+              bottomRight: Radius.circular(18),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x1FC95A5A),
+                blurRadius: 12,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
           child: AnimatedBuilder(
             animation: _a,
@@ -249,7 +318,11 @@ class _TypingBubbleState extends State<_TypingBubble>
                   height: 6,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color.lerp(Colors.black26, Colors.black54, 1 - v),
+                    color: Color.lerp(
+                      const Color(0xFFF0B5BC),
+                      const Color(0xFFE2474F),
+                      1 - v,
+                    ),
                   ),
                 );
               }),
@@ -263,41 +336,62 @@ class _TypingBubbleState extends State<_TypingBubble>
 
 class _InputBar extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode focusNode;
   final VoidCallback onSend;
-  const _InputBar({required this.controller, required this.onSend});
+  const _InputBar({
+    required this.controller,
+    required this.focusNode,
+    required this.onSend,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
+    return Container(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: controller,
-                minLines: 1,
-                maxLines: 4,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => onSend(),
-                decoration: InputDecoration(
-                  hintText: '메시지 입력',
-                  filled: true,
-                  fillColor: const Color(0xFFF1F1F1),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(20),
-                    borderSide: BorderSide.none,
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x14BE5A5A),
+            blurRadius: 16,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  minLines: 1,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => onSend(),
+                  style: const TextStyle(color: Color(0xFF5B2333)),
+                  decoration: InputDecoration(
+                    hintText: '노아한테 말 걸기',
+                    hintStyle: const TextStyle(color: Color(0xFFCAA3A3)),
+                    filled: true,
+                    fillColor: const Color(0xFFF6ECE8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 11,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(22),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 6),
-            _SendButton(onTap: onSend),
-          ],
+              const SizedBox(width: 8),
+              _SendButton(onTap: onSend),
+            ],
+          ),
         ),
       ),
     );
@@ -330,10 +424,14 @@ class _SendButtonState extends State<_SendButton> {
           width: 44,
           height: 44,
           decoration: const BoxDecoration(
-            color: Color(0xFFFEE500),
+            color: Color(0xFFE2474F),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.send_rounded, size: 20, color: Colors.black87),
+          child: const Icon(
+            Icons.favorite_rounded,
+            size: 20,
+            color: Colors.white,
+          ),
         ),
       ),
     );

@@ -11,6 +11,8 @@ abstract class NoaClient {
   Future<NoaReply> reply({
     required List<ChatMessage> history,
     required int moodScore,
+    required List<String> memories,
+    required int affinity,
   });
 }
 
@@ -57,6 +59,8 @@ class ClaudeNoaClient implements NoaClient {
   Future<NoaReply> reply({
     required List<ChatMessage> history,
     required int moodScore,
+    required List<String> memories,
+    required int affinity,
   }) async {
     final messages = history
         .where((m) => m.text.trim().isNotEmpty)
@@ -79,7 +83,7 @@ class ClaudeNoaClient implements NoaClient {
       body: jsonEncode({
         'model': model,
         'max_tokens': 1024,
-        'system': buildNoaSystemPrompt(moodScore),
+        'system': buildNoaSystemPrompt(moodScore, memories, affinity),
         'messages': messages,
         'output_config': {
           'format': {'type': 'json_schema', 'schema': _schema},
@@ -112,6 +116,8 @@ class FakeNoaClient implements NoaClient {
   Future<NoaReply> reply({
     required List<ChatMessage> history,
     required int moodScore,
+    required List<String> memories,
+    required int affinity,
   }) async {
     final last = history.lastWhere(
       (m) => m.sender == Sender.me,

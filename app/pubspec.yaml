@@ -11,6 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.0
+  shared_preferences: ^2.2.0
 
 dev_dependencies:
   flutter_lints: ^4.0.0
@@ -18,5 +19,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    # 노아 아바타(정적 이미지). 표정 바뀌는 애니메이션은 추후 도트 프레임으로 교체.
+    # 노아의 방 무대용 누끼(투명 PNG) — 방을 돌아다니는 캐릭터.
+    - assets/character/noa_cut.png
+    # 정적 아바타(폴백·향후 사용).
     - assets/character/noa.jpg

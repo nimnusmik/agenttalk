@@ -18,6 +18,20 @@ class ChatMessage {
   });
 
   bool get isMe => sender == Sender.me;
+
+  Map<String, dynamic> toJson() => {
+        'sender': sender.name,
+        'text': text,
+        'emotion': emotion.name,
+        'read': read,
+      };
+
+  factory ChatMessage.fromJson(Map<String, dynamic> j) => ChatMessage(
+        sender: j['sender'] == 'me' ? Sender.me : Sender.noa,
+        text: (j['text'] ?? '').toString(),
+        emotion: emotionFromString(j['emotion'] as String?),
+        read: j['read'] as bool? ?? true,
+      );
 }
 
 /// LLM 출력의 버블 1개 (대화 엔진 계약: text + emotion).

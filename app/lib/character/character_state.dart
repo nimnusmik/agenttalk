@@ -1,5 +1,5 @@
-/// 대화 엔진 emotion(논리 감정) ↔ sprite-gen state(시각) 매핑.
-/// 설계서 docs/01(대화 엔진)·04(노아)·05(sprite-gen 연동) 와 동기화.
+// 대화 엔진 emotion(논리 감정) ↔ sprite-gen state(시각) 매핑.
+// 설계서 docs/01(대화 엔진)·04(노아)·05(sprite-gen 연동) 와 동기화.
 
 enum Emotion { idle, talking, thinking, happy, sad, surprised }
 
@@ -66,4 +66,14 @@ Emotion emotionFromString(String? s) {
     default:
       return Emotion.idle;
   }
+}
+
+/// 관계/호감도 (Affinity 0~100) → 3단계 관계 레벨 (docs/01 §1-C).
+/// "대화할수록 얘가 점점 달라진다"의 누적 진행 축.
+enum Bond { distant, warming, close }
+
+Bond bondFromAffinity(int affinity) {
+  if (affinity >= 70) return Bond.close;
+  if (affinity >= 30) return Bond.warming;
+  return Bond.distant;
 }

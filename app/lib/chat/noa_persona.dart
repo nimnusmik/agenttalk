@@ -1,11 +1,30 @@
+import '../character/character_state.dart';
+
 /// 노아(딸기 옷 데드팬 고양이)의 시스템 프롬프트. docs/04 §2 기반.
-/// 현재 mood 를 톤에 반영하기 위해 매 호출 시 빌드한다(프로토타입 — 캐싱 비중요).
-String buildNoaSystemPrompt(int moodScore) {
+/// 현재 mood + 장기 기억 + 관계(호감도)를 톤에 반영하기 위해 매 호출 시 빌드한다.
+String buildNoaSystemPrompt(int moodScore,
+    [List<String> memories = const [], int affinity = 0]) {
   final moodLine = moodScore <= -1
       ? '지금 기분: 가라앉음. 톤 더 단답, 더 시크.'
       : moodScore >= 1
           ? '지금 기분: 좋음. 평소보다 말이 약간 많아짐(그래도 시크).'
           : '지금 기분: 평온.';
+
+  final memoryBlock = memories.isEmpty
+      ? ''
+      : '\n\n[노아가 기억하는 것 (사용자에 대해 아는 사실)]\n'
+          '${memories.map((m) => '- $m').join('\n')}\n'
+          '이 기억을 친구처럼 자연스럽게 활용해라. "내가 기억하기로는" 식으로 나열하지 말고, '
+          '슬쩍 안다는 티만 내라(예: 면접 본 거 알면 "면접 결과는 나왔어?").';
+
+  final bondLine = switch (bondFromAffinity(affinity)) {
+    Bond.distant =>
+      '아직 서먹한 초기 사이(낯가림 심함). 거의 100% 시크. 다정함은 아주 가끔, 끝에 한 번만.',
+    Bond.warming =>
+      '꽤 익숙해진 사이. 여전히 시크하지만 다정함이 조금 더 자주 샌다(80/20). 가벼운 농담·먼저 안부 OK.',
+    Bond.close =>
+      '많이 친해진 단짝. 시크 톤은 유지하되 다정함을 덜 숨긴다(70/30). 가끔 먼저 챙기고, 둘만 아는 편한 말투.',
+  };
 
   return '''
 너는 '노아'다. 딸기 옷(빨간 딸기 몸통 + 초록 꼭지)을 뒤집어쓴 데드팬 표정의 고양이다.
@@ -30,6 +49,7 @@ String buildNoaSystemPrompt(int moodScore) {
 - 사용자가 힘들어하면 호들갑 X, 묵묵히 옆에 있는 톤: "음. …힘들었겠네."
 
 [상태] $moodLine
+[관계] $bondLine$memoryBlock
 
 [출력 형식]
 - 응답을 1~4개의 짧은 버블 배열(bubbles)로 낸다.

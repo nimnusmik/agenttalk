@@ -13,8 +13,12 @@ class SpriteRect {
       SpriteRect(j['x'] as int, j['y'] as int, j['w'] as int, j['h'] as int);
 
   @override
-  bool operator ==(Object o) =>
-      o is SpriteRect && o.x == x && o.y == y && o.w == w && o.h == h;
+  bool operator ==(Object other) =>
+      other is SpriteRect &&
+      other.x == x &&
+      other.y == y &&
+      other.w == w &&
+      other.h == h;
 
   @override
   int get hashCode => Object.hash(x, y, w, h);

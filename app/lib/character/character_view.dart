@@ -41,7 +41,6 @@ class _CharacterViewState extends State<CharacterView>
   Duration _last = Duration.zero;
   Duration _stateElapsed = Duration.zero;
 
-  late String _state;
   late List<SpriteRect> _frames;
   late int _fps;
   late bool _loop;
@@ -77,7 +76,6 @@ class _CharacterViewState extends State<CharacterView>
     final frames = widget.manifest.framesFor(state) ?? const <SpriteRect>[];
     final anim = widget.manifest.animFor(state);
     setState(() {
-      _state = state;
       _frames = frames;
       _fps = anim?.fps ?? 8;
       _loop = anim?.loop ?? true;
