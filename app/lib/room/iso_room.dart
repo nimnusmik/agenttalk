@@ -7,6 +7,7 @@ import '../character/character_state.dart';
 import '../chat/chat_controller.dart';
 import 'furniture.dart';
 import 'iso.dart';
+import 'room_store.dart';
 
 /// 노아의 방 — 아이소메트릭(2.5D, 파니룸 컨셉).
 ///
@@ -34,6 +35,12 @@ enum _Activity { wander, sleep, desk, sofa, gaze, lookUser }
 class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
   static const int _cols = 5;
   static const int _rows = 5;
+
+  // 방 배치(꾸미기로 편집·저장). widget.layout 을 초기값으로, 저장된 게 있으면 그걸로.
+  late List<FurnitureItem> _layout;
+  final RoomStore _roomStore = RoomStore();
+  bool _edit = false; // 꾸미기 모드
+  int? _sel; // 선택된 가구 index
 
   final _rng = Random();
 
@@ -74,11 +81,18 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 800),
       value: 1,
     );
+    _layout = List.of(widget.layout);
     _lastMsgCount = widget.controller.messages.length;
     _lastTick = widget.controller.attentionTick;
     _lastActionTick = widget.controller.actionTick;
     widget.controller.addListener(_onChange);
     _armNextActivity(const Duration(milliseconds: 1200));
+    // 저장된 배치 복원
+    _roomStore.load().then((saved) {
+      if (saved != null && saved.isNotEmpty && mounted) {
+        setState(() => _layout = saved);
+      }
+    });
   }
 
   @override
@@ -124,6 +138,7 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
 
   // --- 컨트롤러 → 반응 ---
   void _onChange() {
+    if (_edit) return; // 꾸미기 중엔 노아 반응 정지
     final c = widget.controller;
     if (c.attentionTick != _lastTick) {
       _lastTick = c.attentionTick;
@@ -193,7 +208,7 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
   }
 
   void _runScheduler() {
-    if (!mounted || _looking) return;
+    if (!mounted || _looking || _edit) return;
     _startActivity(_pickActivity());
   }
 
@@ -256,7 +271,7 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
 
   Offset _targetTile(_Activity a) {
     Offset tileOf(FurnitureType t, Offset fb) {
-      for (final it in widget.layout) {
+      for (final it in _layout) {
         if (it.type == t) return Offset(it.gx.toDouble(), it.gy.toDouble());
       }
       return fb;
@@ -398,17 +413,18 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
             ),
           );
           final furni = <_SceneObj>[];
-          for (final it in widget.layout) {
+          for (var i = 0; i < _layout.length; i++) {
+            final it = _layout[i];
             final piece = _piece(it.type, cfg, theme);
-            final c = cfg.project(it.gx + 0.5, it.gy + 0.5);
+            final cc = cfg.project(it.gx + 0.5, it.gy + 0.5);
             furni.add(_SceneObj(
               depth: it.gx + it.gy + 1.0,
-              left: c.dx - piece.boxW / 2,
-              top: c.dy - piece.anchorY,
+              left: cc.dx - piece.boxW / 2,
+              top: cc.dy - piece.anchorY,
               width: piece.boxW,
               height: piece.boxH,
               child: KeyedSubtree(
-                key: ValueKey('f${it.type.name}_${it.gx}_${it.gy}'),
+                key: ValueKey('f$i'),
                 child: RepaintBoundary(child: piece.widget),
               ),
             ));
@@ -422,73 +438,113 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
                 child: o.child,
               );
 
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              _lookAtUser();
-              _spawnHeart();
-            },
-            child: AnimatedBuilder(
-              // 매 프레임 다시 칠하는 건 노아뿐. 가구/바닥은 RepaintBoundary로 고정.
-              animation: Listenable.merge([_walk, _breathe]),
-              builder: (context, _) {
-                final feet = cfg.project(_fx, _fy);
-                _lastFeet = feet;
-                final noaDepth = _fx + _fy + 0.01;
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _edit
+                      ? null
+                      : () {
+                          _lookAtUser();
+                          _spawnHeart();
+                        },
+                  onTapUp:
+                      _edit ? (d) => _editSelectAt(d.localPosition, cfg) : null,
+                  onPanStart:
+                      _edit ? (d) => _editSelectAt(d.localPosition, cfg) : null,
+                  onPanUpdate:
+                      _edit ? (d) => _editDrag(d.localPosition, cfg) : null,
+                  onPanEnd: _edit ? (_) => _editEnd() : null,
+                  child: AnimatedBuilder(
+                    // 매 프레임 다시 칠하는 건 노아뿐. 가구/바닥은 RepaintBoundary로 고정.
+                    animation: Listenable.merge([_walk, _breathe]),
+                    builder: (context, _) {
+                      final feet = cfg.project(_fx, _fy);
+                      _lastFeet = feet;
+                      final noaDepth = _fx + _fy + 0.01;
 
-                return Stack(
-                  children: [
-                    Positioned.fill(child: floor),
-                    // 노아보다 뒤(깊이 작음)
-                    for (final o in furni)
-                      if (o.depth <= noaDepth) posOf(o),
-                    // 노아
-                    Positioned(
-                      left: feet.dx - noaW / 2,
-                      top: feet.dy - noaH,
-                      width: noaW,
-                      height: noaH,
-                      child: _buildNoa(noaW, noaH),
-                    ),
-                    // 노아보다 앞(깊이 큼)
-                    for (final o in furni)
-                      if (o.depth > noaDepth) posOf(o),
-                    // 하트
-                    ..._hearts.map(
-                      (id) => Positioned(
-                        left: _lastFeet.dx - 12,
-                        top: _lastFeet.dy - noaH - 6,
-                        child: _Heart(
-                          key: ValueKey(id),
-                          onDone: () => setState(() => _hearts.remove(id)),
-                        ),
-                      ),
-                    ),
-                    // 분위기 오버레이
-                    if (_ambient(tod) != null)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: ColoredBox(color: _ambient(tod)!),
-                        ),
-                      ),
-                    if (_moodTint(mood) != null)
-                      Positioned.fill(
-                        child: IgnorePointer(
-                          child: ColoredBox(color: _moodTint(mood)!),
-                        ),
-                      ),
-                    // 상태 pill
-                    Positioned(
-                      left: 16,
-                      top: 16,
-                      child: SafeArea(
-                        child: _statusPill(mood, tod, bond),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+                      return Stack(
+                        children: [
+                          Positioned.fill(child: floor),
+                          // 노아보다 뒤(깊이 작음)
+                          for (final o in furni)
+                            if (o.depth <= noaDepth) posOf(o),
+                          // 노아
+                          Positioned(
+                            left: feet.dx - noaW / 2,
+                            top: feet.dy - noaH,
+                            width: noaW,
+                            height: noaH,
+                            child: _buildNoa(noaW, noaH),
+                          ),
+                          // 노아보다 앞(깊이 큼)
+                          for (final o in furni)
+                            if (o.depth > noaDepth) posOf(o),
+                          // 하트
+                          ..._hearts.map(
+                            (id) => Positioned(
+                              left: _lastFeet.dx - 12,
+                              top: _lastFeet.dy - noaH - 6,
+                              child: _Heart(
+                                key: ValueKey(id),
+                                onDone: () =>
+                                    setState(() => _hearts.remove(id)),
+                              ),
+                            ),
+                          ),
+                          // 분위기 오버레이
+                          if (_ambient(tod) != null)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: ColoredBox(color: _ambient(tod)!),
+                              ),
+                            ),
+                          if (_moodTint(mood) != null)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: ColoredBox(color: _moodTint(mood)!),
+                              ),
+                            ),
+                          // 꾸미기: 선택 가구 타일 강조
+                          if (_edit && _sel != null && _sel! < _layout.length)
+                            _selHighlight(cfg),
+                          // 상태 pill
+                          Positioned(
+                            left: 16,
+                            top: 16,
+                            child: SafeArea(
+                              child: _statusPill(mood, tod, bond),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ),
+              ),
+              // 꾸미기 토글
+              Positioned(
+                right: 14,
+                top: 14,
+                child: SafeArea(child: _editToggle()),
+              ),
+              // 선택 삭제
+              if (_edit && _sel != null)
+                Positioned(
+                  right: 14,
+                  top: 66,
+                  child: SafeArea(child: _deleteBtn()),
+                ),
+              // 아이템 카탈로그
+              if (_edit)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _catalogTray(),
+                ),
+            ],
           );
         },
       ),
@@ -643,6 +699,203 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
         _Tod.sunset => const Color(0x14FF8A5C),
         _Tod.day => null,
       };
+
+  // ───────────────────────── 꾸미기(방 편집) ─────────────────────────
+
+  /// 화면 좌표 → 격자 타일(역투영).
+  (int, int) _tileAt(Offset p, IsoConfig cfg) {
+    final a = (p.dx - cfg.origin.dx) / cfg.halfW; // gx - gy
+    final b = (p.dy - cfg.origin.dy) / cfg.halfH; // gx + gy
+    final gx = ((a + b) / 2).floor().clamp(0, _cols - 1);
+    final gy = ((b - a) / 2).floor().clamp(0, _rows - 1);
+    return (gx, gy);
+  }
+
+  int? _furnitureAt(int gx, int gy) {
+    for (var i = _layout.length - 1; i >= 0; i--) {
+      if (_layout[i].gx == gx && _layout[i].gy == gy) return i;
+    }
+    return null;
+  }
+
+  void _editSelectAt(Offset p, IsoConfig cfg) {
+    final (gx, gy) = _tileAt(p, cfg);
+    setState(() => _sel = _furnitureAt(gx, gy));
+  }
+
+  void _editDrag(Offset p, IsoConfig cfg) {
+    if (_sel == null) return;
+    final (gx, gy) = _tileAt(p, cfg);
+    final cur = _layout[_sel!];
+    if (cur.gx == gx && cur.gy == gy) return;
+    setState(() {
+      _layout = [..._layout]..[_sel!] = cur.copyWith(gx: gx, gy: gy);
+    });
+  }
+
+  void _editEnd() => _saveLayout();
+
+  void _addFurniture(FurnitureType t) {
+    final occ = {for (final f in _layout) '${f.gx}_${f.gy}'};
+    var gx = _cols ~/ 2, gy = _rows ~/ 2;
+    outer:
+    for (var y = 0; y < _rows; y++) {
+      for (var x = 0; x < _cols; x++) {
+        if (!occ.contains('${x}_$y')) {
+          gx = x;
+          gy = y;
+          break outer;
+        }
+      }
+    }
+    setState(() {
+      _layout = [..._layout, FurnitureItem(t, gx, gy)];
+      _sel = _layout.length - 1;
+    });
+    _saveLayout();
+  }
+
+  void _deleteSelected() {
+    if (_sel == null) return;
+    setState(() {
+      _layout = [..._layout]..removeAt(_sel!);
+      _sel = null;
+    });
+    _saveLayout();
+  }
+
+  void _saveLayout() => _roomStore.save(_layout);
+
+  void _toggleEdit() {
+    setState(() {
+      _edit = !_edit;
+      _sel = null;
+    });
+    if (_edit) {
+      _actTimer?.cancel();
+      _lookTimer?.cancel();
+    } else {
+      _saveLayout();
+      _armNextActivity(const Duration(milliseconds: 600));
+    }
+  }
+
+  Widget _selHighlight(IsoConfig cfg) {
+    final it = _layout[_sel!];
+    final c = cfg.project(it.gx + 0.5, it.gy + 0.5);
+    return Positioned(
+      left: c.dx - cfg.tileW / 2,
+      top: c.dy - cfg.tileH / 2,
+      width: cfg.tileW,
+      height: cfg.tileH,
+      child: const IgnorePointer(child: _DiamondMarker()),
+    );
+  }
+
+  Widget _editToggle() {
+    return GestureDetector(
+      onTap: _toggleEdit,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: _edit ? const Color(0xFFE2474F) : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x33000000), blurRadius: 8, offset: Offset(0, 3)),
+          ],
+        ),
+        child: Text(
+          _edit ? '✓ 완료' : '🛠 꾸미기',
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w800,
+            color: _edit ? Colors.white : const Color(0xFFA8425A),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _deleteBtn() {
+    return GestureDetector(
+      onTap: _deleteSelected,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+                color: Color(0x33000000), blurRadius: 8, offset: Offset(0, 3)),
+          ],
+        ),
+        child: const Icon(Icons.delete_outline,
+            color: Color(0xFFE2474F), size: 22),
+      ),
+    );
+  }
+
+  static const Map<FurnitureType, String> _furniLabel = {
+    FurnitureType.bed: '침대',
+    FurnitureType.desk: '책상',
+    FurnitureType.sofa: '소파',
+    FurnitureType.table: '테이블',
+    FurnitureType.lamp: '조명',
+    FurnitureType.plant: '화분',
+    FurnitureType.rug: '러그',
+    FurnitureType.fridge: '냉장고',
+    FurnitureType.counter: '싱크대',
+  };
+
+  Widget _catalogTray() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+              color: Color(0x22000000), blurRadius: 12, offset: Offset(0, -4)),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            children: [
+              for (final t in FurnitureType.values)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () => _addFurniture(t),
+                    child: Container(
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFBE7EF),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFFF3C6D6)),
+                      ),
+                      child: Text(
+                        '＋ ${_furniLabel[t] ?? t.name}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFA8425A),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // ───────────────────────── 룸 테마(팔레트) ─────────────────────────
@@ -1255,6 +1508,37 @@ class _RoomPainter extends CustomPainter {
       old.theme != theme ||
       old.cfg.tileW != cfg.tileW ||
       old.cfg.origin != cfg.origin;
+}
+
+// ───────────────────────── 꾸미기 선택 마커 ─────────────────────────
+
+class _DiamondMarker extends StatelessWidget {
+  const _DiamondMarker();
+  @override
+  Widget build(BuildContext context) => CustomPaint(painter: _DiamondPainter());
+}
+
+class _DiamondPainter extends CustomPainter {
+  @override
+  void paint(Canvas c, Size s) {
+    final p = Path()
+      ..moveTo(s.width / 2, 0)
+      ..lineTo(s.width, s.height / 2)
+      ..lineTo(s.width / 2, s.height)
+      ..lineTo(0, s.height / 2)
+      ..close();
+    c.drawPath(p, Paint()..color = const Color(0x553BE0A0));
+    c.drawPath(
+      p,
+      Paint()
+        ..color = const Color(0xFF2BB07A)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_DiamondPainter old) => false;
 }
 
 // ───────────────────────── 하트 파티클 ─────────────────────────
