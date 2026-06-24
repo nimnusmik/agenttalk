@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import 'chat/chat_controller.dart';
-import 'chat/chat_screen.dart';
 import 'chat/claude_code_client.dart';
 import 'chat/noa_client.dart';
 import 'chat/noa_store.dart';
+import 'home_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +45,7 @@ class AgentTalkApp extends StatelessWidget {
         colorSchemeSeed: const Color(0xFFFEE500),
         fontFamily: 'Apple SD Gothic Neo',
       ),
-      home: ChatScreen(controller: controller),
+      home: HomeShell(controller: controller),
     );
   }
 }

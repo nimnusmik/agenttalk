@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../character/character_state.dart';
 import 'chat_controller.dart';
 import 'models.dart';
-import 'noa_room.dart';
 
 /// 노아의 방 (Direction 01) 채팅 화면.
 /// 상단: 노아가 돌아다니는 방 무대(대화 시작 시 슬림 헤더로 줄어듦).
@@ -65,9 +65,6 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     final c = widget.controller;
-    final size = MediaQuery.of(context).size;
-    final bigH = (size.height * 0.46).clamp(300.0, 430.0);
-    final slimH = (size.height * 0.26).clamp(190.0, 250.0);
 
     return Scaffold(
       backgroundColor: const Color(0xFF241B2E),
@@ -77,24 +74,8 @@ class _ChatScreenState extends State<ChatScreen> {
           constraints: const BoxConstraints(maxWidth: 480),
           child: Column(
             children: [
-              // ── 노아의 방 (collapsing) ──
-              SafeArea(
-                bottom: false,
-                child: ListenableBuilder(
-                  listenable: c,
-                  builder: (_, __) {
-                    // 사용자가 말 걸기 전까지는 큰 방(첫인상). 첫 대화 후 슬림 헤더로.
-                    final engaged = c.messages.any((m) => m.isMe);
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 420),
-                      curve: Curves.easeOutCubic,
-                      height: engaged ? slimH : bigH,
-                      width: double.infinity,
-                      child: NoaRoom(controller: c),
-                    );
-                  },
-                ),
-              ),
+              // ── 슬림 헤더(노아 + 관계) ── 방은 이제 [방] 탭에 있다.
+              _ChatHeader(controller: c),
               // ── 대화 (둥근 시트로 방과 연결) ──
               Expanded(
                 child: Container(
@@ -148,6 +129,74 @@ class _ChatScreenState extends State<ChatScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 톡 화면 상단 슬림 헤더 — 노아 아바타 + 관계 라벨.
+class _ChatHeader extends StatelessWidget {
+  final ChatController controller;
+  const _ChatHeader({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      bottom: false,
+      child: ListenableBuilder(
+        listenable: controller,
+        builder: (_, __) {
+          final bond = bondFromAffinity(controller.affinity);
+          final (label, color) = switch (bond) {
+            Bond.distant => ('🤍 서먹', const Color(0xFFD8B6C0)),
+            Bond.warming => ('💗 친해지는 중', const Color(0xFFF3A6BC)),
+            Bond.close => ('❤️ 단짝', const Color(0xFFE2474F)),
+          };
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF3A2E47),
+                    shape: BoxShape.circle,
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.asset(
+                    'assets/character/noa_cut.png',
+                    fit: BoxFit.cover,
+                    alignment: Alignment.topCenter,
+                  ),
+                ),
+                const SizedBox(width: 11),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '노아',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

@@ -1,0 +1,32 @@
+노아의 방 — 가구 스프라이트 일괄 생성용 이미지 프롬프트
+(이미지 생성 모델에 사용. 9종을 같은 스타일/세팅/시드로 한 번에 뽑아 일관성 확보)
+
+────────────────────────────────────────
+[공통 스타일 프롬프트 — 모든 가구 앞에 동일하게 붙일 것]
+
+cute cozy isometric furniture sprite, 2:1 isometric projection (true isometric, ~30° top-down angle),
+single object centered, thick clean dark outline, soft cel shading, light source from top-left,
+pastel kawaii dollhouse aesthetic (Korean "Fanny Room" / Cyworld minimum style),
+flat solid colors with gentle gradient shading, NO ground shadow, NO background (fully transparent PNG),
+high resolution, crisp edges, game asset, consistent style across the set
+
+[가구별 — 위 스타일 뒤에 하나씩]
+1) bed.png     : low wooden bed frame with light-blue blanket and two white pillows
+2) desk.png    : small warm-wood study desk with a little chair, a book and a pink mug on top
+3) sofa.png    : pink two-seater sofa with back cushions and armrests
+4) lamp.png    : slim floor lamp, wooden pole, warm glowing lampshade
+5) plant.png   : terracotta pot with a round leafy green houseplant
+6) fridge.png  : cream-white two-door refrigerator with metal handles and a heart magnet
+7) counter.png : kitchen counter / sink cabinet, cream cabinet with stainless sink basin and faucet
+8) table.png   : small low coffee table, warm wood, with a book and a tiny vase on top
+9) rug.png     : flat oval/diamond rug seen in isometric, yellow tones with simple dotted pattern
+
+[색 팔레트 힌트]
+침대=#CFE6F4 blanket / 소파=#F6AEC2 pink / 우드=#E7C39B~#A9805C / 냉장고=#F1EEE9 cream /
+싱크=#F3E7D6 cabinet + #B9C6C9 sink / 화분=#D98A6E pot + #8FCB6E leaves / 러그=#F2C14E yellow
+외곽선=어두운 브라운(#5B3A2E 정도)
+
+[출력]
+투명 배경 PNG, 정사각 캔버스(512×512 또는 1024×1024), 가구가 가로 중앙 + 하단 가까이에 바닥이 닿도록,
+좌우 여백 최소, 그림자 없음. 9개 파일명: bed/desk/sofa/lamp/plant/fridge/counter/table/rug .png
+────────────────────────────────────────
