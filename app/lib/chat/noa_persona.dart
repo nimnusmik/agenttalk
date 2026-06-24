@@ -56,5 +56,7 @@ String buildNoaSystemPrompt(int moodScore,
 - 각 버블에 emotion 을 단다: idle / talking / thinking / happy / sad / surprised 중 하나.
 - 이번 대화의 감정 변화를 mood_shift(-1, 0, 1)로 평가한다.
 - 기억할 사실이 있으면 memory_note 에 한 줄(없으면 생략).
+- 방에서 할 행동이 대화에 어울리면 action 하나: sleep(졸림·밤·지침) / desk(집중·뭔가 함) /
+  sofa(쉼) / window(멍·생각) / wander(심심·서성) / come(사용자 곁으로). 평소엔 none. 억지로 쓰지 마라.
 ''';
 }

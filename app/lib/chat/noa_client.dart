@@ -50,6 +50,10 @@ class ClaudeNoaClient implements NoaClient {
         'enum': [-1, 0, 1],
       },
       'memory_note': {'type': 'string'},
+      'action': {
+        'type': 'string',
+        'enum': ['none', 'sleep', 'desk', 'sofa', 'window', 'wander', 'come'],
+      },
     },
     'required': ['bubbles', 'mood_shift'],
     'additionalProperties': false,
@@ -142,6 +146,29 @@ class FakeNoaClient implements NoaClient {
         ],
         moodShift: -1,
         memoryNote: '사용자가 힘들어함',
+        action: 'come', // 곁으로 옴
+      );
+    }
+    if (last.contains('졸') ||
+        last.contains('자야') ||
+        last.contains('잘래') ||
+        last.contains('잔다') ||
+        last.contains('피곤')) {
+      return const NoaReply(
+        bubbles: [
+          Bubble('…졸려.', emotion: Emotion.idle),
+          Bubble('잘래. 깨우지 마.', emotion: Emotion.talking),
+        ],
+        action: 'sleep',
+      );
+    }
+    if (last.contains('심심') || last.contains('뭐해') || last.contains('뭐 해')) {
+      return const NoaReply(
+        bubbles: [
+          Bubble('딱히.', emotion: Emotion.idle),
+          Bubble('그냥 돌아다니는 중.', emotion: Emotion.talking),
+        ],
+        action: 'wander',
       );
     }
     if (last.contains('!') || last.contains('ㅋㅋ') || last.contains('좋')) {

@@ -48,7 +48,15 @@ class NoaReply {
   final int moodShift; // -1 | 0 | 1
   final String? memoryNote;
 
-  const NoaReply({required this.bubbles, this.moodShift = 0, this.memoryNote});
+  /// 노아가 고른 방 행동: sleep|desk|sofa|window|wander|come (없으면 null).
+  final String? action;
+
+  const NoaReply({
+    required this.bubbles,
+    this.moodShift = 0,
+    this.memoryNote,
+    this.action,
+  });
 
   factory NoaReply.fromJson(Map<String, dynamic> j) {
     final raw = (j['bubbles'] as List<dynamic>? ?? const []);
@@ -62,12 +70,14 @@ class NoaReply {
         })
         .where((b) => b.text.trim().isNotEmpty)
         .toList();
+    final act = (j['action'] as String?)?.trim();
     return NoaReply(
       bubbles: bubbles.isEmpty
           ? const [Bubble('…', emotion: Emotion.idle)]
           : bubbles,
       moodShift: (j['mood_shift'] as num?)?.toInt() ?? 0,
       memoryNote: j['memory_note'] as String?,
+      action: (act == null || act.isEmpty || act == 'none') ? null : act,
     );
   }
 }

@@ -57,6 +57,10 @@ class ChatController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 노아가 대화 흐름상 고른 방 행동(LLM action). 방 위젯이 tick 증가 시 수행.
+  String? pendingAction;
+  int actionTick = 0;
+
   bool _greeted = false;
 
   /// 진입 시 노아가 먼저 한마디(첫인사). LLM 없이 정해진 데드팬 인사.
@@ -146,6 +150,11 @@ class ChatController extends ChangeNotifier {
     affinity = (affinity + 2 + (reply.moodShift > 0 ? 2 : 0)).clamp(0, 100);
     avatarEmotion = Emotion.idle;
     typing = false;
+    // 노아가 고른 행동 → 방 위젯이 actionTick 변화를 보고 수행
+    if (reply.action != null && reply.action!.isNotEmpty) {
+      pendingAction = reply.action;
+      actionTick++;
+    }
     notifyListeners();
 
     // 장기 기억: 노아가 뽑은 memory_note 누적 (직전과 중복 제외, 상한 관리)

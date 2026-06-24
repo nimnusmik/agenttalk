@@ -28,6 +28,7 @@ MODEL = os.environ.get("NOA_MODEL", "claude-opus-4-8")
 ISO_CWD = tempfile.mkdtemp(prefix="noa-backend-")
 
 VALID_EMOTIONS = {"idle", "talking", "thinking", "happy", "sad", "surprised"}
+VALID_ACTIONS = {"none", "sleep", "desk", "sofa", "window", "wander", "come"}
 
 
 def build_persona(mood_score: int) -> str:
@@ -66,11 +67,14 @@ CONTRACT = """[출력 형식 — 반드시 지켜라]
 다음 노아의 차례에 할 말을, **오직 아래 JSON 한 덩어리로만** 출력한다.
 JSON 앞뒤에 설명·인사·코드펜스(```)·다른 텍스트 절대 금지. JSON만.
 
-{"bubbles":[{"text":"버블 내용","emotion":"idle|talking|thinking|happy|sad|surprised"}],"mood_shift":-1,"memory_note":"기억할 사실 한 줄(없으면 생략 가능)"}
+{"bubbles":[{"text":"버블 내용","emotion":"idle|talking|thinking|happy|sad|surprised"}],"mood_shift":-1,"memory_note":"기억할 사실 한 줄(없으면 생략 가능)","action":"none"}
 
 - bubbles: 1~4개의 짧은 버블. 각 버블에 emotion 하나.
 - mood_shift: 이번 대화로 노아 기분이 어떻게 바뀌었나. -1(다운) | 0(그대로) | 1(업) 중 하나.
-- memory_note: 사용자에 대해 장기 기억할 만한 사실이 있으면 한 줄. 없으면 넣지 마라."""
+- memory_note: 사용자에 대해 장기 기억할 만한 사실이 있으면 한 줄. 없으면 넣지 마라.
+- action: 이 흐름상 노아가 방에서 할 행동. 평소엔 "none". 어울릴 때만 하나 선택:
+  "sleep"(졸림·밤·지침) | "desk"(집중·뭔가 함) | "sofa"(쉼) | "window"(멍·생각) |
+  "wander"(심심·서성) | "come"(사용자 곁으로). 억지로 쓰지 마라."""
 
 
 def build_prompt(history: list, mood_score: int, memories: list, affinity: int) -> str:
@@ -155,6 +159,9 @@ def normalize_reply(data: dict) -> dict:
     note = data.get("memory_note")
     if note:
         out["memory_note"] = str(note)
+    action = data.get("action")
+    if action in VALID_ACTIONS and action != "none":
+        out["action"] = action
     return out
 
 

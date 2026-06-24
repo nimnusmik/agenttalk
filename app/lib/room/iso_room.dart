@@ -56,6 +56,7 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
 
   int _lastMsgCount = 0;
   int _lastTick = 0;
+  int _lastActionTick = 0;
 
   final List<int> _hearts = [];
   int _heartSeq = 0;
@@ -75,6 +76,7 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
     );
     _lastMsgCount = widget.controller.messages.length;
     _lastTick = widget.controller.attentionTick;
+    _lastActionTick = widget.controller.actionTick;
     widget.controller.addListener(_onChange);
     _armNextActivity(const Duration(milliseconds: 1200));
   }
@@ -138,6 +140,30 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
     } else if (c.typing && !_looking) {
       _lookAtUser();
     }
+    // 노아가 대화에서 고른 행동(LLM action) — react보다 우선해 위치를 정한다.
+    if (c.actionTick != _lastActionTick) {
+      _lastActionTick = c.actionTick;
+      _doAction(c.pendingAction);
+    }
+  }
+
+  void _doAction(String? a) {
+    final act = switch (a) {
+      'sleep' => _Activity.sleep,
+      'desk' => _Activity.desk,
+      'sofa' => _Activity.sofa,
+      'window' => _Activity.gaze,
+      'wander' => _Activity.wander,
+      'come' => _Activity.lookUser,
+      _ => null,
+    };
+    if (act == null) return;
+    if (act == _Activity.lookUser) {
+      _lookAtUser();
+      return;
+    }
+    setState(() => _looking = false);
+    _startActivity(act);
   }
 
   // --- 이동 ---
