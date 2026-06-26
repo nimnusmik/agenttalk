@@ -7,3 +7,6 @@
 
 # 임시 스크린샷
 /room-2a-first.png
+
+# Claude Code 로컬 상태(머신 한정 — ralph-loop·로컬 설정 등). 커밋 금지.
+.claude/
