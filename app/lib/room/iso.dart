@@ -49,9 +49,9 @@ class IsoConfig {
     final sceneW = (cols + rows) * baseHalfW;
     final sceneH = (cols + rows) * baseHalfH + baseWallH;
 
-    // 가로는 94%까지 채우고, 세로는 72% 안에서. 작은 방은 키워서 채운다.
+    // 가로는 94%까지 채우고, 세로는 80% 안에서. 작은 방은 키워서 채운다.
     final fitW = (availW * 0.94) / sceneW;
-    final fitH = (availH * 0.72) / sceneH;
+    final fitH = (availH * 0.80) / sceneH;
     final scale = (fitW < fitH ? fitW : fitH).clamp(0.3, 2.4);
 
     final tileW = baseTileW * scale;

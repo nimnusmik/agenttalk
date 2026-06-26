@@ -1,0 +1,54 @@
+노아의 방 — "통짜 일러스트" 배경 생성 키트 (Path A · 실사급)
+====================================================================
+목표: 가구·조명·그림자까지 한 장에 다 그려진 아이소메트릭 원룸 1장.
+이 위로 노아(딸기 고양이)만 살아 움직인다. (가구는 그림에 baked → 빌보드 문제 없음)
+
+■ 결과물
+  - 파일: app/assets/room/scene.png  (1장)
+  - 캔버스: 정사각 권장 2048x2048 (또는 1536x1536), 투명 PNG
+  - 방(벽+바닥)만 그리고 바깥은 투명 — 앱 배경(민트) 위에 얹는다
+
+■ 워크플로
+  1) 아래 프롬프트로 방 1장 생성 → app/assets/room/_raw/scene.png 에 저장
+  2) (배경이 불투명/단색이면) python3 scripts/cutout_furniture.py 로는 처리 X.
+     투명이 아니면 그냥 두고 알려주면 Claude이 별도 처리.
+  3) Claude이 kUseRoomScene 모드 켜고 노아 바닥(마름모 4코너)·활동점 캘리브레이션 + 스샷 확인.
+
+────────────────────────────────────────────────────────────
+[★ 절대 지킬 것 — 노아가 살아 움직이려면]
+- **가운데 바닥을 비워라.** 가구는 전부 벽쪽으로. 방 한가운데에 노아가 걸어다닐
+  탁 트인 바닥(러그 포함 OK, 러그 위는 걸어도 됨)이 있어야 한다.
+- **진짜 2:1 아이소메트릭** (가로:세로=2:1, ~30° 부감). 바닥이 반듯한 마름모로 보이게.
+  바닥 네 변이 또렷해야 노아 좌표를 맞출 수 있다.
+- 노아·사람·동물 캐릭터 **그리지 말 것** (노아는 앱이 따로 얹음).
+- 그림자: 가구마다 **바닥 접촉 그림자 baked** (이게 실사감의 핵심).
+
+[구역 배치 — 이 구도로]
+- 뒤 왼쪽: **수면존** — 침대(연하늘 이불·흰 베개), 머리맡 벽에 작은 액자
+- 뒤 오른쪽: **주방존** — 싱크대(스틸 싱크+수전) + 크림 양문 냉장고, 위 벽에 창문, 옆에 벽시계
+- 앞 왼쪽: **작업존** — 우드 책상 + 작은 의자 (좌측 벽에 등 붙임)
+- 가운데~앞: **거실존** — 옐로 타원 러그 위에 핑크 2인 소파, 소파 앞 우드 커피테이블,
+  소파 옆 플로어 스탠드(따뜻한 빛), 한쪽에 화분
+- **가운데 바닥은 비움** (동선/여백)
+
+[스타일]
+cozy isometric one-room studio (원룸), true 2:1 isometric ~30deg top-down,
+pastel kawaii dollhouse / Korean "Fanny Room" Cyworld minihompy aesthetic,
+mint-green walls and soft checkered mint floor, thick clean dark-brown outline,
+soft cel shading + baked soft contact shadows under every furniture,
+warm cozy daytime light from top-left, furniture flush against the walls,
+OPEN empty floor in the CENTER for a character to walk, no characters, no people,
+single cohesive illustration, high resolution, crisp edges, transparent background
+outside the room shape.
+
+[색 팔레트]
+벽/바닥 민트, 우드 #E7C39B~#A9805C, 소파 핑크 #F6AEC2, 냉장고/싱크 크림 #F1EEE9,
+이불 연하늘 #CFE6F4, 러그 옐로 #F2C14E, 화분 초록 #8FCB6E + 테라코타 #D98A6E,
+외곽선 #5B3A2E. (기존 노아 방 색감과 동일 → 노아랑 톤 일치)
+
+[프레이밍]
+방이 캔버스 중앙. 위쪽 벽 두 면이 보이고, 앞쪽으로 바닥이 펼쳐지는 표준 아이소 뷰.
+세로 모바일 화면(약 9:19)에 방이 위쪽~가운데 들어오도록, 캔버스는 정사각이어도 OK
+(앱이 가로 맞춰 배치). 바깥 여백 투명.
+────────────────────────────────────────────────────────────
+넣은 뒤 "방 그림 넣었어" 라고 하면 Claude이 노아 바닥/활동점 캘리브레이션 진행.

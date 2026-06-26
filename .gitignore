@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Playwright MCP 산출물
+.playwright-mcp/
+
+# 임시 스크린샷
+/room-2a-first.png

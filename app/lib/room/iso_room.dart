@@ -8,6 +8,7 @@ import '../chat/chat_controller.dart';
 import 'furniture.dart';
 import 'iso.dart';
 import 'room_store.dart';
+import 'sprite_sizes.dart';
 
 /// 노아의 방 — 아이소메트릭(2.5D, 파니룸 컨셉).
 ///
@@ -33,8 +34,8 @@ enum _Tod { day, sunset, night }
 enum _Activity { wander, sleep, desk, sofa, gaze, lookUser }
 
 class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
-  static const int _cols = 5;
-  static const int _rows = 5;
+  static const int _cols = 6;
+  static const int _rows = 6;
 
   // 방 배치(꾸미기로 편집·저장). widget.layout 을 초기값으로, 저장된 게 있으면 그걸로.
   late List<FurnitureItem> _layout;
@@ -282,13 +283,13 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
         final b = tileOf(FurnitureType.bed, const Offset(0, 1));
         return Offset(b.dx + 0.5, b.dy + 0.5); // 침대 위에 눕기
       case _Activity.desk:
-        final d = tileOf(FurnitureType.desk, const Offset(0, 3));
+        final d = tileOf(FurnitureType.desk, const Offset(0, 4));
         return Offset(d.dx + 1.5, d.dy + 0.5); // 책상 '앞 칸'에 앉기(겹침 방지)
       case _Activity.sofa:
-        final s = tileOf(FurnitureType.sofa, const Offset(2, 3));
+        final s = tileOf(FurnitureType.sofa, const Offset(3, 4));
         return Offset(s.dx + 0.5, s.dy + 0.6); // 소파 앞쪽에 앉기(앞으로 와 안 가려짐)
       case _Activity.gaze:
-        return const Offset(2.5, 1.1); // 창가/주방 쪽 멍
+        return const Offset(3.0, 1.0); // 창가/주방 쪽 멍
       case _Activity.lookUser:
         return const Offset(_cols / 2, _rows / 2);
       case _Activity.wander:
@@ -296,9 +297,9 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
     }
   }
 
-  /// 가구를 안 가리는 안전한 빈 칸들로만 배회 (소파 뒤·가구 칸 제외).
+  /// 가구를 안 가리는 안전한 빈 칸들로만 배회 (6x6, 가구 칸 제외).
   static const List<List<int>> _wanderTiles = [
-    [1, 1], [2, 1], [1, 2], [3, 2], [1, 3], [3, 3], [3, 1],
+    [1, 1], [3, 1], [4, 1], [1, 2], [2, 2], [4, 2], [1, 3], [2, 4], [4, 3],
   ];
   Offset _randomOpenTile() {
     final t = _wanderTiles[_rng.nextInt(_wanderTiles.length)];
@@ -415,10 +416,14 @@ class _RoomScreenState extends State<RoomScreen> with TickerProviderStateMixin {
           final furni = <_SceneObj>[];
           for (var i = 0; i < _layout.length; i++) {
             final it = _layout[i];
-            final piece = _piece(it.type, cfg, theme);
+            final piece = _piece(it.type, cfg, theme, flipX: it.flipX);
             final cc = cfg.project(it.gx + 0.5, it.gy + 0.5);
+            // 러그는 바닥 장식 — 항상 다른 가구·노아 밑에 깔리도록 깊이를 최하로.
+            final depth = it.type == FurnitureType.rug
+                ? -10.0 + (it.gx + it.gy) * 0.01
+                : it.gx + it.gy + 1.0;
             furni.add(_SceneObj(
-              depth: it.gx + it.gy + 1.0,
+              depth: depth,
               left: cc.dx - piece.boxW / 2,
               top: cc.dy - piece.anchorY,
               width: piece.boxW,
@@ -944,8 +949,9 @@ class _Piece {
   const _Piece(this.widget, this.boxW, this.boxH, this.anchorY);
 }
 
-_Piece _piece(FurnitureType t, IsoConfig cfg, _RoomTheme theme) {
-  if (kUseFurnitureSprites) return _spritePiece(t, cfg);
+_Piece _piece(FurnitureType t, IsoConfig cfg, _RoomTheme theme,
+    {bool flipX = false}) {
+  if (kUseFurnitureSprites) return _spritePiece(t, cfg, flipX: flipX);
   final u = cfg.tileW * 0.70; // 가구는 타일보다 작게(방에 여백)
   final (w, h) = switch (t) {
     FurnitureType.rug => (u * 2.0, u * 1.1),
@@ -966,35 +972,33 @@ _Piece _piece(FurnitureType t, IsoConfig cfg, _RoomTheme theme) {
   );
 }
 
-/// 스프라이트 PNG 한 조각. 아트는 "바닥 접촉점 = 하단 중앙" 기준으로 그려졌다고 가정.
-/// (폭 배수·종횡비는 실제 아트 들어오면 미세조정)
-_Piece _spritePiece(FurnitureType t, IsoConfig cfg) {
+/// 스프라이트 PNG 한 조각. 아트는 "바닥 접촉점 = 하단 중앙" 기준(콘텐츠 타이트 크롭).
+/// wMul = 화면상 가구 '폭'(타일 기준). 높이는 sprite_sizes.dart 의 실제 종횡비로 따라가
+/// 가구가 눌리거나 늘어나지 않게 한다.
+_Piece _spritePiece(FurnitureType t, IsoConfig cfg, {bool flipX = false}) {
   final wMul = switch (t) {
-    FurnitureType.rug => 2.0,
-    FurnitureType.bed => 2.0,
-    FurnitureType.desk => 1.5,
-    FurnitureType.sofa => 2.0,
-    FurnitureType.lamp => 0.9,
-    FurnitureType.plant => 1.0,
-    FurnitureType.fridge => 1.3,
-    FurnitureType.counter => 2.2,
-    FurnitureType.table => 1.4,
+    FurnitureType.rug => 2.1,
+    FurnitureType.bed => 1.8,
+    FurnitureType.desk => 1.2,
+    FurnitureType.sofa => 1.55,
+    FurnitureType.lamp => 0.5,
+    FurnitureType.plant => 0.62,
+    FurnitureType.fridge => 0.85,
+    FurnitureType.counter => 1.4,
+    FurnitureType.table => 1.0,
   };
   final w = cfg.tileW * wMul;
-  final h = w; // 정사각 캔버스 가정
-  return _Piece(
-    Image.asset(
-      furnitureSprite(t),
-      width: w,
-      height: h,
-      fit: BoxFit.contain,
-      alignment: Alignment.bottomCenter,
-      filterQuality: FilterQuality.medium,
-    ),
-    w,
-    h,
-    h - cfg.tileW * 0.06,
+  final aspect = kSpriteAspect[t.name] ?? 1.0; // imgW / imgH
+  final h = w / aspect;
+  Widget img = Image.asset(
+    furnitureSprite(t),
+    width: w,
+    height: h,
+    fit: BoxFit.fill, // 박스 종횡비가 이미지와 동일 → 왜곡 없음
+    filterQuality: FilterQuality.medium,
   );
+  if (flipX) img = Transform.flip(flipX: true, child: img);
+  return _Piece(img, w, h, h - cfg.tileW * 0.06);
 }
 
 /// 타입별 아이소 가구 페인터. 외곽선(셀룩) + 음영으로 "그려진 가구" 느낌.

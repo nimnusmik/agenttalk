@@ -12,6 +12,10 @@ dependencies:
     sdk: flutter
   http: ^1.2.0
   shared_preferences: ^2.2.0
+  # 3D 방 POC (실사화 — three.js Dart 포팅) + glTF 로더
+  three_js: ^0.3.0
+  three_js_advanced_loaders: ^0.3.0
+  three_js_postprocessing: ^0.3.0
 
 dev_dependencies:
   flutter_lints: ^4.0.0
@@ -23,3 +27,7 @@ flutter:
     - assets/character/noa_cut.png
     # 정적 아바타(폴백·향후 사용).
     - assets/character/noa.jpg
+    # 방 가구 스프라이트(디테일 카툰). _raw/ 는 생성 원본이라 번들 제외(하위 폴더는 미포함).
+    - assets/room/
+    # 3D 방 가구 모델(Kenney Furniture Kit, CC0)
+    - assets/room3d/

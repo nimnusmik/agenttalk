@@ -1,32 +1,56 @@
-노아의 방 — 가구 스프라이트 일괄 생성용 이미지 프롬프트
-(이미지 생성 모델에 사용. 9종을 같은 스타일/세팅/시드로 한 번에 뽑아 일관성 확보)
+노아의 방 — 가구 스프라이트 생성 키트 (디테일 카툰 / 파니룸 고급화)
+====================================================================
+목표: 현재 "벡터 박스" 가구를 둥근 카툰 일러스트 가구로 교체해 파니룸/싸이월드
+미니룸 무드로 실사감을 올린다. 9종을 같은 스타일/세팅으로 한 번에 뽑는 게 핵심.
 
-────────────────────────────────────────
+────────────────────────────────────────────────────────────
+■ 워크플로 (요약)
+  1) 아래 프롬프트로 이미지 생성  → 2) app/assets/room/_raw/ 에 저장
+  3) python3 scripts/cutout_furniture.py  (배경 누끼 + 크롭 자동)
+  4) furniture.dart 의 kUseFurnitureSprites=true → 앱 실행 → Claude이 앵커 미세조정
+
+■ 일관성 확보 (제일 중요 — 안 맞으면 방이 따로 논다)
+  - 권장 A: 9칸 한 장(3x3 시트)으로 한 번에 생성. 파일명 sheet.png 로 _raw/ 에 두고
+    `python3 scripts/cutout_furniture.py --sheet` (시트는 아래 순서로 채울 것).
+  - 권장 B: 첫 1장(예: sofa)을 뽑은 뒤, 그 이미지를 "스타일 레퍼런스"로 물려 나머지 8종 생성.
+  - 9종 모두 같은 모델·같은 시드·같은 광원(좌상단)·같은 외곽선 두께로.
+
+■ 배경 (투명 PNG가 까다로우면 단색으로 — 누끼 스크립트가 처리한다)
+  - 1순위: 완전 투명 PNG.
+  - 2순위(권장, 안전): 순수 마젠타 단색 배경  #FF00FF  (가구엔 안 쓰는 색이라 키잉이 깔끔).
+  - 어느 쪽이든 그림자는 넣지 말 것(앱이 바닥 그림자를 따로 그림).
+
+────────────────────────────────────────────────────────────
 [공통 스타일 프롬프트 — 모든 가구 앞에 동일하게 붙일 것]
 
-cute cozy isometric furniture sprite, 2:1 isometric projection (true isometric, ~30° top-down angle),
-single object centered, thick clean dark outline, soft cel shading, light source from top-left,
-pastel kawaii dollhouse aesthetic (Korean "Fanny Room" / Cyworld minimum style),
-flat solid colors with gentle gradient shading, NO ground shadow, NO background (fully transparent PNG),
-high resolution, crisp edges, game asset, consistent style across the set
+cute cozy isometric furniture sprite, 2:1 isometric projection (true isometric, ~30deg
+top-down angle), single object centered, thick clean dark-brown outline, soft cel shading,
+light source from TOP-LEFT, pastel kawaii dollhouse aesthetic (Korean "Fanny Room" /
+Cyworld minihompy style), flat solid colors with gentle gradient shading,
+NO ground shadow, flat solid MAGENTA #FF00FF background (or transparent),
+high resolution, crisp clean edges, game asset, consistent style across the whole set
 
-[가구별 — 위 스타일 뒤에 하나씩]
-1) bed.png     : low wooden bed frame with light-blue blanket and two white pillows
-2) desk.png    : small warm-wood study desk with a little chair, a book and a pink mug on top
-3) sofa.png    : pink two-seater sofa with back cushions and armrests
-4) lamp.png    : slim floor lamp, wooden pole, warm glowing lampshade
-5) plant.png   : terracotta pot with a round leafy green houseplant
-6) fridge.png  : cream-white two-door refrigerator with metal handles and a heart magnet
-7) counter.png : kitchen counter / sink cabinet, cream cabinet with stainless sink basin and faucet
-8) table.png   : small low coffee table, warm wood, with a book and a tiny vase on top
-9) rug.png     : flat oval/diamond rug seen in isometric, yellow tones with simple dotted pattern
+[가구별 — 위 스타일 뒤에 하나씩. 시트(3x3)면 이 1~9 순서로 좌→우, 상→하]
+1) bed     : low wooden bed frame with light-blue blanket and two white pillows
+2) desk    : small warm-wood study desk with a little chair, a book and a pink mug on top
+3) sofa    : pink two-seater sofa with back cushions and rounded armrests
+4) lamp    : slim floor lamp, wooden pole, warm glowing lampshade
+5) plant   : terracotta pot with a round leafy green houseplant
+6) fridge  : cream-white two-door refrigerator with metal handles and a heart magnet
+7) counter : kitchen counter / sink cabinet, cream cabinet with stainless sink basin and faucet
+8) table   : small low coffee table, warm wood, with a book and a tiny vase on top
+9) rug     : flat oval rug seen in isometric (lying on floor), yellow tones, simple dotted pattern
 
 [색 팔레트 힌트]
-침대=#CFE6F4 blanket / 소파=#F6AEC2 pink / 우드=#E7C39B~#A9805C / 냉장고=#F1EEE9 cream /
-싱크=#F3E7D6 cabinet + #B9C6C9 sink / 화분=#D98A6E pot + #8FCB6E leaves / 러그=#F2C14E yellow
-외곽선=어두운 브라운(#5B3A2E 정도)
+침대 blanket=#CFE6F4 / 소파 pink=#F6AEC2 / 우드=#E7C39B~#A9805C / 냉장고 cream=#F1EEE9 /
+싱크 cabinet=#F3E7D6 + sink=#B9C6C9 / 화분 pot=#D98A6E + leaves=#8FCB6E / 러그 yellow=#F2C14E
+외곽선=어두운 브라운 #5B3A2E
 
-[출력]
-투명 배경 PNG, 정사각 캔버스(512×512 또는 1024×1024), 가구가 가로 중앙 + 하단 가까이에 바닥이 닿도록,
-좌우 여백 최소, 그림자 없음. 9개 파일명: bed/desk/sofa/lamp/plant/fridge/counter/table/rug .png
-────────────────────────────────────────
+[프레이밍/출력]
+- 정사각 캔버스(512x512 또는 1024x1024), 가구가 가로 중앙 + 하단 가까이에 바닥이 닿게,
+  좌우 여백 최소(러그는 화면 안에 타원 전체가 보이게).
+- 그림자 없음. 파일명(개별 모드): bed/desk/sofa/lamp/plant/fridge/counter/table/rug .png
+- 시트 모드: sheet.png 한 장.
+────────────────────────────────────────────────────────────
+생성 후 → _raw/ 에 넣고 cutout_furniture.py 실행 → "에셋 넣었어" 라고 하면
+Claude이 폭 배수(wMul)·앵커 미세조정 + 스크린샷 확인까지 진행.
